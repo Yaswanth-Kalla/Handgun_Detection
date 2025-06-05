@@ -77,6 +77,47 @@ Upon detection, it highlights the handgun with a bounding box, displays a confid
 ---
 
 
+
+---
+
+### 🎥 Visual Demonstration
+
+#### 🏠 Homepage
+
+This is the landing page of the real-time handgun detection system interface.
+
+![Homepage](images/home.png)
+
+---
+
+#### 🖼️ Image Detection
+
+The model detects handguns in static images by drawing bounding boxes and displaying confidence scores.
+
+![Image Detection](images/image_detection.png)
+
+---
+
+#### 📼 Video Detection
+
+The model processes each frame of a video stream and overlays bounding boxes with confidence scores on detected handguns.
+
+![Video Detection](images/video_detection.png)
+
+---
+
+#### 📷 Webcam (Live Feed) Detection
+
+Live handgun detection using a webcam. The system immediately detects handguns and triggers visual + audio alerts.
+
+![Webcam Detection](images/webcam.png)
+
+
+---
+
+
+
+
 ## 📊 Model Performance
 
 | Metric                      | Value         |
