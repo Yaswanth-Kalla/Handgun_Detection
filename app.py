@@ -10,7 +10,6 @@ import warnings
 import time
 import threading
 import os
-from playsound import playsound
 
 warnings.filterwarnings("ignore")
 
