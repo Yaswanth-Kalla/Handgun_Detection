@@ -1,8 +1,8 @@
 streamlit
-ultralytics
-opencv-python
-Pillow
+opencv-python-headless
 numpy
+Pillow
+ultralytics
 streamlit-webrtc
 imageio
-imageio-ffmpeg
+playsound
