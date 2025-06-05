@@ -86,7 +86,23 @@ def detect_video(video_file_path):
     writer.close()
     return temp_output.name
 
+
+
+
 # Define an alarm function (sound file required)
+
+# def play_alarm():
+#     try:
+#         playsound("alarm.wav")
+#     except:
+#         print("Alarm sound file not found or cannot play.")
+
+
+
+
+# Alarm function (As streamlit doesn't support sound)
+
+
 def play_alarm():
     st.warning("🚨 Gun detected for 5 seconds with confidence > 0.7!")
 
