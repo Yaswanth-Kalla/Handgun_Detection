@@ -5,4 +5,3 @@ Pillow
 ultralytics
 streamlit-webrtc
 imageio
-playsound
