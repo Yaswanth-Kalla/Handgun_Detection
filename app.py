@@ -10,7 +10,6 @@ import warnings
 import time
 import threading
 import os
-from playsound import playsound
 
 warnings.filterwarnings("ignore")
 
@@ -87,12 +86,6 @@ def detect_video(video_file_path):
     writer.close()
     return temp_output.name
 
-# Define an alarm function (sound file required)
-def play_alarm():
-    try:
-        playsound("alarm.wav")
-    except:
-        print("Alarm sound file not found or cannot play.")
 
 class YOLOVideoTransformer(VideoTransformerBase):
     def __init__(self):
@@ -101,14 +94,6 @@ class YOLOVideoTransformer(VideoTransformerBase):
         self.alarm_triggered = False
         self.last_alarm_time = 0
         self.alarm_path = "alarm.wav"
-
-    def play_alarm(self):
-        try:
-            playsound(self.alarm_path)
-        except Exception as e:
-            print("Error playing alarm:", e)
-        finally:
-            self.alarm_triggered = False
 
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -127,14 +112,6 @@ class YOLOVideoTransformer(VideoTransformerBase):
                 conf = float(box.conf[0])
                 class_name = self.model.names[cls_id]
                 print(f"Detected: {class_name} (Confidence: {conf:.2f})")
-
-                if class_name and "gun" in class_name.lower() and conf > 0.7:
-                    if not self.alarm_triggered:
-                        print("🔫 Gun detected with high confidence! Triggering alarm.")
-                        self.alarm_triggered = True
-                        self.last_alarm_time = time.time()
-                        threading.Thread(target=self.play_alarm, daemon=True).start()
-                    break
         return result_frame
 
 
