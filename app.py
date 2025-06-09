@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 st.set_page_config(page_title="Handgun Detection App", layout="wide")
 
-st.markdown(\"""
+st.markdown("""
 <div style="
     background: linear-gradient(to right, #74a9f5, #98c9f0);
     padding: 2rem;
@@ -26,7 +26,7 @@ st.markdown(\"""
         Upload an image, video, or use your webcam to detect the presence of handguns using YOLOv11n in real-time.
     </p>
 </div>
-\""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 @st.cache_resource
 def load_model():
@@ -35,7 +35,7 @@ def load_model():
 model = load_model()
 
 st.sidebar.title("🧠 About This App")
-st.sidebar.markdown(\"""
+st.sidebar.markdown("""
 Welcome to the **Handgun Detection App** – a real-time weapon detection system built using the powerful **YOLOv11n** model and **Streamlit** framework.
 
 🔍 **Features**:
@@ -49,7 +49,7 @@ Welcome to the **Handgun Detection App** – a real-time weapon detection system
 
 💬 **Need help or have suggestions?**  
 📧 <a href="mailto:yaswanthkalla4444@gmail.com">yaswanthkalla4444@gmail.com</a>
-\""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 option = st.radio("Choose Detection Mode:", ["📷 Image", "🎞️ Video", "📹 Webcam"], horizontal=True)
 st.markdown("---")
