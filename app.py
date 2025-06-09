@@ -63,43 +63,48 @@ def detect_image(image):
         return results[0].plot(), results[0]
 
 def detect_video(video_file_path):
-    cap = cv2.VideoCapture(video_file_path)
+    try:
+        cap = cv2.VideoCapture(video_file_path)
 
-    if not cap.isOpened():
-        print("⚠️ Failed to open the video file.")
-        return None
+        if not cap.isOpened():
+            st.error("⚠️ Could not open video file.")
+            return None
 
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = cap.get(cv2.CAP_PROP_FPS) or 20
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS) or 20
 
-    if frame_count == 0:
-        print("⚠️ Video has zero frames.")
+        if frame_count == 0:
+            cap.release()
+            st.error("⚠️ The uploaded video has 0 frames.")
+            return None
+
+        temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+        writer = imageio.get_writer(temp_output.name, fps=fps)
+
+        progress = st.progress(0)
+        frame_num = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            results = model.predict(frame, verbose=False)
+            annotated = results[0].plot()
+            rgb_frame = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+            writer.append_data(rgb_frame)
+
+            frame_num += 1
+            progress.progress(min(int((frame_num / frame_count) * 100), 100))
+
         cap.release()
+        writer.close()
+        return temp_output.name
+
+    except Exception as e:
+        st.error(f"❌ Error processing video: {e}")
         return None
 
-    temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    writer = imageio.get_writer(temp_output.name, fps=fps)
-
-    progress = st.progress(0)
-    frame_num = 0
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        results = model.predict(frame, verbose=False)
-        annotated = results[0].plot()
-        rgb_frame = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-        writer.append_data(rgb_frame)
-
-        frame_num += 1
-        progress.progress(min(int((frame_num / frame_count) * 100), 100))
-
-    cap.release()
-    writer.close()
-
-    return temp_output.name
 
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
