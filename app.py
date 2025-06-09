@@ -60,35 +60,47 @@ def detect_image(image):
         results = model.predict(image)
         return results[0].plot(), results[0]
 
+import os
+
 def detect_video(video_file_path):
-    if frame_count == 0:
-        print("⚠️ Warning: Uploaded video has 0 frames!")
-        return None
     cap = cv2.VideoCapture(video_file_path)
+
+    if not cap.isOpened():
+        print("⚠️ Failed to open the video file.")
+        return None
+
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = cap.get(cv2.CAP_PROP_FPS) or 20
+
+    if frame_count == 0:
+        print("⚠️ Video has zero frames.")
+        cap.release()
+        return None
+
     temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     writer = imageio.get_writer(temp_output.name, fps=fps)
 
     progress = st.progress(0)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_num = 0
 
-    while cap.isOpened():
+    while True:
         ret, frame = cap.read()
         if not ret:
             break
+
         results = model.predict(frame, verbose=False)
         annotated = results[0].plot()
         rgb_frame = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
         writer.append_data(rgb_frame)
 
         frame_num += 1
-        if frame_count > 0:
-            progress.progress(min(int(frame_num / frame_count * 100), 100))
+        progress.progress(min(int((frame_num / frame_count) * 100), 100))
 
     cap.release()
     writer.close()
+
     return temp_output.name
+
 
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
@@ -123,24 +135,22 @@ if option == "📷 Image":
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
     if video_file:
-        try:
-            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-            tfile.write(video_file.read())
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+        tfile.write(video_file.read())
 
-            st.info("🧠 Processing video... Please wait.")
-            output_path = detect_video(tfile.name)
+        st.info("🧠 Processing video... Please wait.")
+        output_path = detect_video(tfile.name)
 
-            if output_path and os.path.exists(output_path):
-                st.success("✅ Video processed!")
-                st.video(output_path, format="video/mp4", start_time=0)
+        if output_path and os.path.exists(output_path):
+            st.success("✅ Video processed!")
+            st.video(output_path, format="video/mp4", start_time=0)
 
-                with open(output_path, "rb") as f:
-                    video_bytes = f.read()
-                st.download_button("📥 Download Processed Video", data=video_bytes, file_name="processed_video.mp4", mime="video/mp4")
-            else:
-                st.error("⚠️ Video processing failed. Please try a different video.")
-        except Exception as e:
-            st.error(f"❌ Error processing video: {e}")
+            with open(output_path, "rb") as f:
+                video_bytes = f.read()
+            st.download_button("📥 Download Processed Video", data=video_bytes, file_name="processed_video.mp4", mime="video/mp4")
+        else:
+            st.error("⚠️ Video processing failed. Please try a different video.")
+
 
 elif option == "📹 Webcam":
     webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
