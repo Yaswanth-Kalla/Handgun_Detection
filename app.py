@@ -8,14 +8,12 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import imageio
 import warnings
 import time
-import threading
-import os
 
 warnings.filterwarnings("ignore")
 
 st.set_page_config(page_title="Handgun Detection App", layout="wide")
 
-st.markdown("""
+st.markdown(\"""
 <div style="
     background: linear-gradient(to right, #74a9f5, #98c9f0);
     padding: 2rem;
@@ -28,7 +26,7 @@ st.markdown("""
         Upload an image, video, or use your webcam to detect the presence of handguns using YOLOv11n in real-time.
     </p>
 </div>
-""", unsafe_allow_html=True)
+\""", unsafe_allow_html=True)
 
 @st.cache_resource
 def load_model():
@@ -37,7 +35,7 @@ def load_model():
 model = load_model()
 
 st.sidebar.title("🧠 About This App")
-st.sidebar.markdown("""
+st.sidebar.markdown(\"""
 Welcome to the **Handgun Detection App** – a real-time weapon detection system built using the powerful **YOLOv11n** model and **Streamlit** framework.
 
 🔍 **Features**:
@@ -48,7 +46,10 @@ Welcome to the **Handgun Detection App** – a real-time weapon detection system
 🚀 Powered by cutting-edge deep learning and optimized for performance, this app demonstrates practical firearm detection with user-friendly interaction.
 
 ---
-""", unsafe_allow_html=True)
+
+💬 **Need help or have suggestions?**  
+📧 <a href="mailto:yaswanthkalla4444@gmail.com">yaswanthkalla4444@gmail.com</a>
+\""", unsafe_allow_html=True)
 
 option = st.radio("Choose Detection Mode:", ["📷 Image", "🎞️ Video", "📹 Webcam"], horizontal=True)
 st.markdown("---")
@@ -86,34 +87,11 @@ def detect_video(video_file_path):
     writer.close()
     return temp_output.name
 
-
 class YOLOVideoTransformer(VideoTransformerBase):
-    def __init__(self):
-        self.model = YOLO("model/best.pt")
-        self.prev_time = 0
-        self.alarm_triggered = False
-        self.last_alarm_time = 0
-        self.alarm_path = "alarm.wav"
-
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
-
-        current_time = time.time()
-        fps = 1 / (current_time - self.prev_time) if self.prev_time else 0
-        self.prev_time = current_time
-
-        results = self.model(img)
-        result_frame = results[0].plot()
-
-        boxes = results[0].boxes
-        if boxes is not None:
-            for box in boxes:
-                cls_id = int(box.cls[0])
-                conf = float(box.conf[0])
-                class_name = self.model.names[cls_id]
-                print(f"Detected: {class_name} (Confidence: {conf:.2f})")
-        return result_frame
-
+        results = model.predict(img)
+        return results[0].plot()
 
 if option == "📷 Image":
     image_files = st.file_uploader("Upload one or more images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -155,7 +133,6 @@ elif option == "🎞️ Video":
 
 elif option == "📹 Webcam":
     webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
-
 
 st.markdown("---")
 st.markdown("<div style='text-align:center;'>Made with ❤️ using Streamlit</div>", unsafe_allow_html=True)
