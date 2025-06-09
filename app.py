@@ -147,9 +147,15 @@ elif option == "🎞️ Video":
 
             with open(output_path, "rb") as f:
                 video_bytes = f.read()
-            st.download_button("📥 Download Processed Video", data=video_bytes, file_name="processed_video.mp4", mime="video/mp4")
+
+            st.download_button(
+                "📥 Download Processed Video",
+                data=video_bytes,
+                file_name="processed_video.mp4",
+                mime="video/mp4"
+            )
         else:
-            st.error("⚠️ Video processing failed. Please try a different video.")
+            st.error("❌ Failed to process the video. Please check the file and try again.")
 
 
 elif option == "📹 Webcam":
