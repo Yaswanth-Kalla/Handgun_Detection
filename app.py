@@ -61,6 +61,9 @@ def detect_image(image):
         return results[0].plot(), results[0]
 
 def detect_video(video_file_path):
+    if frame_count == 0:
+        print("⚠️ Warning: Uploaded video has 0 frames!")
+        return None
     cap = cv2.VideoCapture(video_file_path)
     fps = cap.get(cv2.CAP_PROP_FPS) or 20
     temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
@@ -120,16 +123,24 @@ if option == "📷 Image":
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
     if video_file:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(video_file.read())
-        st.info("🧠 Processing video...")
-        output_path = detect_video(tfile.name)
-        st.success("✅ Video processed!")
-        st.video(output_path, format="video/mp4", start_time=0)
+        try:
+            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+            tfile.write(video_file.read())
 
-        with open(output_path, "rb") as f:
-            video_bytes = f.read()
-        st.download_button("📥 Download Processed Video", data=video_bytes, file_name="processed_video.mp4", mime="video/mp4")
+            st.info("🧠 Processing video... Please wait.")
+            output_path = detect_video(tfile.name)
+
+            if output_path and os.path.exists(output_path):
+                st.success("✅ Video processed!")
+                st.video(output_path, format="video/mp4", start_time=0)
+
+                with open(output_path, "rb") as f:
+                    video_bytes = f.read()
+                st.download_button("📥 Download Processed Video", data=video_bytes, file_name="processed_video.mp4", mime="video/mp4")
+            else:
+                st.error("⚠️ Video processing failed. Please try a different video.")
+        except Exception as e:
+            st.error(f"❌ Error processing video: {e}")
 
 elif option == "📹 Webcam":
     webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
