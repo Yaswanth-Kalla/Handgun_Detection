@@ -1,7 +1,7 @@
-streamlit==1.45.1
-opencv-python-headless==4.9.0.80
-numpy==1.26.4
-Pillow==10.3.0
-ultralytics==8.1.35
-imageio==2.34.0
-streamlit-webrtc==0.46.2
+streamlit
+opencv-python-headless
+numpy
+Pillow
+ultralytics
+imageio
+streamlit-webrtc
