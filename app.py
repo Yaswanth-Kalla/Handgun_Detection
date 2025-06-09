@@ -1,3 +1,4 @@
+
 import streamlit as st
 import tempfile
 import cv2
@@ -8,6 +9,7 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import imageio
 import warnings
 import time
+import os
 
 warnings.filterwarnings("ignore")
 
@@ -15,7 +17,7 @@ st.set_page_config(page_title="Handgun Detection App", layout="wide")
 
 st.markdown("""
 <div style="
-    background: linear-gradient(to right, #74a9f5, #98c9f0);
+    background: linear-gradient(to right, #74a9f5, #7dbcf0);
     padding: 2rem;
     border-radius: 12px;
     text-align: center;
@@ -60,8 +62,6 @@ def detect_image(image):
         results = model.predict(image)
         return results[0].plot(), results[0]
 
-import os
-
 def detect_video(video_file_path):
     cap = cv2.VideoCapture(video_file_path)
 
@@ -100,7 +100,6 @@ def detect_video(video_file_path):
     writer.close()
 
     return temp_output.name
-
 
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
@@ -156,7 +155,6 @@ elif option == "🎞️ Video":
             )
         else:
             st.error("❌ Failed to process the video. Please check the file and try again.")
-
 
 elif option == "📹 Webcam":
     webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
