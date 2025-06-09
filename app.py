@@ -141,25 +141,29 @@ elif option == "🎞️ Video":
     if video_file:
         tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
         tfile.write(video_file.read())
+        tfile.flush()
 
         st.info("🧠 Processing video... Please wait.")
         output_path = detect_video(tfile.name)
 
-        if output_path and os.path.exists(output_path):
+        if output_path is not None and os.path.exists(output_path):
             st.success("✅ Video processed!")
             st.video(output_path, format="video/mp4", start_time=0)
 
-            with open(output_path, "rb") as f:
-                video_bytes = f.read()
-
-            st.download_button(
-                "📥 Download Processed Video",
-                data=video_bytes,
-                file_name="processed_video.mp4",
-                mime="video/mp4"
-            )
+            try:
+                with open(output_path, "rb") as f:
+                    video_bytes = f.read()
+                st.download_button(
+                    "📥 Download Processed Video",
+                    data=video_bytes,
+                    file_name="processed_video.mp4",
+                    mime="video/mp4"
+                )
+            except Exception as e:
+                st.error(f"⚠️ Could not prepare download button: {e}")
         else:
             st.error("❌ Failed to process the video. Please check the file and try again.")
+
 
 elif option == "📹 Webcam":
     webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
