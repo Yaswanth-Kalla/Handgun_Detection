@@ -223,7 +223,12 @@ elif option == "📹 Webcam":
     webrtc_streamer(
         key="webcam",
         video_transformer_factory=YOLOVideoTransformer,
-        rtc_configuration=rtc_configuration
+        rtc_configuration=rtc_configuration,
+        media_stream_constraints={
+            "video": True,
+            "audio": False
+        },
+        async_processing=True
     )
 
 
