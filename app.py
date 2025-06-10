@@ -150,12 +150,12 @@ if option == "📷 Image":
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
     if video_file:
-        # 1. Clear prior output if a new file is uploaded
+        # If a new file is uploaded, clear previous state
         if st.session_state.get("last_video_name") != video_file.name:
             st.session_state["last_video_name"] = video_file.name
             st.session_state.pop("video_output_path", None)
 
-        # 2. Save upload to temp file
+        # Save upload to temp file on first upload
         if "video_output_path" not in st.session_state:
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
             tfile.write(video_file.read())
@@ -169,32 +169,23 @@ elif option == "🎞️ Video":
                 st.error("❌ Failed to process the video.")
                 st.stop()
 
-                # 3. Display processed video only when fully written
-        processed = st.session_state["video_output_path"]
+        # At this point, we have a processed video file path
+        processed_path = st.session_state["video_output_path"]
         st.success("✅ Video processed!")
 
-        # Wait briefly to ensure file write completion (especially in cloud)
-        time.sleep(1)
+        # Display the video by passing its file path directly
+        st.video(processed_path)
 
-        try:
-            with open(processed, "rb") as f:
-                video_bytes = f.read()
-
-            # Use st.video directly with bytes to ensure compatibility
-            st.video(video_bytes, format="video/mp4")
-        except Exception as e:
-            st.error(f"⚠️ Could not display video: {e}")
-
-
-        # 4. Download button uses the already-processed file
-        with open(processed, "rb") as f:
+        # Download button
+        with open(processed_path, "rb") as f:
             data = f.read()
         st.download_button(
             "📥 Download Processed Video",
             data=data,
-            file_name=f"processed_{video_file.name}.mp4",
+            file_name=f"processed_{video_file.name}",
             mime="video/mp4"
         )
+
 
 
 elif option == "📹 Webcam":
