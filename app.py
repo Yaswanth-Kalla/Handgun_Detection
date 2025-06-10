@@ -122,7 +122,29 @@ class YOLOVideoTransformer(VideoTransformerBase):
         img = frame.to_ndarray(format="bgr24")
         results = model.predict(img)
         return results[0].plot()
+        
+def convert_to_h264(input_path):
+    # Create a temp file for the converted video
+    h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+    h264_temp.close()
+    output_path = h264_temp.name
 
+    # ffmpeg command to convert video to H.264
+    command = [
+        "ffmpeg",
+        "-y",  # Overwrite output file if it exists
+        "-i", input_path,
+        "-vcodec", "libx264",
+        "-acodec", "aac",
+        output_path
+    ]
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return output_path
+    except subprocess.CalledProcessError as e:
+        st.error("Video conversion to H.264 failed.")
+        st.error(e.stderr.decode())
+        return None
 if option == "📷 Image":
     image_files = st.file_uploader("Upload one or more images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     if image_files:
@@ -146,29 +168,6 @@ if option == "📷 Image":
                 num_detections = len(result_data.boxes) if result_data.boxes else 0
                 st.write(f"🔍 **Objects Detected**: {num_detections}")
                 st.download_button("📥 Download Result Image", data=result_img.tobytes(), file_name=f"detection_{image_file.name}", mime="image/jpeg")
-
-def convert_to_h264(input_path):
-    # Create a temp file for the converted video
-    h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    h264_temp.close()
-    output_path = h264_temp.name
-
-    # ffmpeg command to convert video to H.264
-    command = [
-        "ffmpeg",
-        "-y",  # Overwrite output file if it exists
-        "-i", input_path,
-        "-vcodec", "libx264",
-        "-acodec", "aac",
-        output_path
-    ]
-    try:
-        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return output_path
-    except subprocess.CalledProcessError as e:
-        st.error("Video conversion to H.264 failed.")
-        st.error(e.stderr.decode())
-        return None
 
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
