@@ -50,8 +50,6 @@ Welcome to the **Handgun Detection App** – a real-time weapon detection system
 
 ---
 
-💬 **Need help or have suggestions?**  
-📧 <a href="mailto:yaswanthkalla4444@gmail.com">yaswanthkalla4444@gmail.com</a>
 """, unsafe_allow_html=True)
 
 option = st.radio("Choose Detection Mode:", ["📷 Image", "🎞️ Video", "📹 Webcam"], horizontal=True)
