@@ -63,6 +63,7 @@ def detect_image(image):
         return results[0].plot(), results[0]
 
 def detect_video(video_file_path):
+    import traceback
     try:
         cap = cv2.VideoCapture(video_file_path)
 
@@ -85,24 +86,29 @@ def detect_video(video_file_path):
                 break
 
             try:
-                # Run the model prediction (assumes model is global)
-                results = model.predict(frame, verbose=False)
+                # Convert BGR to RGB before model prediction
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = model.predict(rgb_frame, verbose=False)
 
-                # Get the annotated frame (PIL Image)
+                # Annotate the result
                 annotated = results[0].plot()
 
-                # Ensure it's a NumPy array (RGB, uint8)
+                # Ensure it's a valid NumPy RGB array
                 if isinstance(annotated, Image.Image):
                     annotated = np.array(annotated)
 
+                if annotated is None or not isinstance(annotated, np.ndarray):
+                    raise ValueError("Annotated frame is invalid.")
+
+                # Make sure it's uint8 for imageio
                 if annotated.dtype != np.uint8:
                     annotated = annotated.astype(np.uint8)
 
-                # Append frame to video writer
                 writer.append_data(annotated)
 
             except Exception as e:
                 st.error(f"❌ Error processing frame {frame_num}: {e}")
+                st.code(traceback.format_exc())
                 continue
 
             frame_num += 1
@@ -114,11 +120,10 @@ def detect_video(video_file_path):
         return temp_output.name
 
     except Exception as e:
-        import traceback
-        st.error("❌ Error processing video:")
+        st.error(f"❌ Error processing video.")
         st.code(traceback.format_exc())
-
         return None
+
 
 
 class YOLOVideoTransformer(VideoTransformerBase):
