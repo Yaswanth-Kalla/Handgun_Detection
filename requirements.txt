@@ -3,5 +3,4 @@ numpy
 Pillow
 streamlit-webrtc
 ultralytics
-imageio
 streamlit
