@@ -115,7 +115,6 @@ def detect_video(video_file_path):
         st.error(f"❌ Video processing failed: {e}")
         return None
 
-
 rtc_configuration = RTCConfiguration(
     {
         "iceServers": [
@@ -139,7 +138,7 @@ rtc_configuration = RTCConfiguration(
     }
 )
 
-
+# Transformer Class
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -222,7 +221,7 @@ elif option == "📹 Webcam":
         rtc_configuration=rtc_configuration,
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True
-    )
+)
 
 
 
