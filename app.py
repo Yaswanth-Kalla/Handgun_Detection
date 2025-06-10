@@ -72,10 +72,14 @@ def detect_video(video_file_path):
             return None
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 20
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        writer = imageio.get_writer(temp_output.name, fps=fps)
+        # Use OpenCV writer instead of imageio
+        temp_output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Use 'mp4v' for .mp4 format
+        out = cv2.VideoWriter(temp_output_path, fourcc, fps, (width, height))
 
         progress = st.progress(0)
         frame_num = 0
@@ -88,23 +92,17 @@ def detect_video(video_file_path):
             try:
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = model.predict(rgb_frame, verbose=False)
-
-                # Use result.imgs[0] or results[0].plot() and check validity
                 annotated = results[0].plot()
-
-                if annotated is None:
-                    raise ValueError("Model returned None for plot()")
 
                 if isinstance(annotated, Image.Image):
                     annotated = np.array(annotated)
 
-                if not isinstance(annotated, np.ndarray):
-                    raise ValueError("Annotated frame is not a NumPy array")
+                if annotated is None or not isinstance(annotated, np.ndarray):
+                    raise ValueError("Invalid annotated frame")
 
-                if annotated.dtype != np.uint8:
-                    annotated = annotated.astype(np.uint8)
-
-                writer.append_data(annotated)
+                # Convert RGB back to BGR for OpenCV writer
+                bgr_annotated = cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
+                out.write(bgr_annotated)
 
             except Exception as e:
                 st.warning(f"⚠️ Skipping frame {frame_num} due to error: {e}")
@@ -116,13 +114,14 @@ def detect_video(video_file_path):
                 progress.progress(min(int(frame_num / frame_count * 100), 100))
 
         cap.release()
-        writer.close()
-        return temp_output.name
+        out.release()
+        return temp_output_path
 
     except Exception as e:
         st.error("❌ Video processing failed.")
         st.code(traceback.format_exc())
         return None
+
 
 
 
