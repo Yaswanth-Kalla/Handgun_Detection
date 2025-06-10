@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from ultralytics import YOLO
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration, WebRtcMode
 import imageio
 import warnings
 import time
@@ -141,11 +141,24 @@ rtc_configuration = RTCConfiguration(
 # Transformer Class
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        results = model.predict(img)
-        annotated = results[0].plot()
-        return av.VideoFrame.from_ndarray(annotated, format="bgr24")
+        # 1) Grab a BGR numpy array from the incoming frame
+        bgr = frame.to_ndarray(format="bgr24")
 
+        # 2) Convert to RGB for the YOLO model
+        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+
+        # 3) Run inference
+        results = model.predict(rgb, verbose=False)
+
+        # 4) Get the annotated image (PIL.Image or np.ndarray in RGB)
+        annotated = results[0].plot()
+
+        # 5) If it’s a PIL.Image, convert to numpy
+        if isinstance(annotated, Image.Image):
+            annotated = np.array(annotated)
+
+        # 6) Return as VideoFrame in **rgb24** format
+        return av.VideoFrame.from_ndarray(annotated, format="rgb24")
 
 def convert_to_h264(input_path):
     h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
@@ -217,11 +230,12 @@ elif option == "🎞️ Video":
 elif option == "📹 Webcam":
     webrtc_streamer(
         key="handgun-webcam",
-        video_transformer_factory=YOLOVideoTransformer,
+        mode=WebRtcMode.SENDRECV,
         rtc_configuration=rtc_configuration,
         media_stream_constraints={"video": True, "audio": False},
-        async_processing=True
-)
+        video_transformer_factory=YOLOVideoTransformer,
+        async_processing=True,
+    )
 
 
 
