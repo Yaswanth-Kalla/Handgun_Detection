@@ -173,8 +173,9 @@ elif option == "🎞️ Video":
         processed_path = st.session_state["video_output_path"]
         st.success("✅ Video processed!")
 
-        # Display the video by passing its file path directly
-        st.video(processed_path)
+        # Display the video using a file-like object
+        with open(processed_path, "rb") as video:
+            st.video(video)
 
         # Download button
         with open(processed_path, "rb") as f:
@@ -185,7 +186,6 @@ elif option == "🎞️ Video":
             file_name=f"processed_{video_file.name}",
             mime="video/mp4"
         )
-
 
 
 elif option == "📹 Webcam":
