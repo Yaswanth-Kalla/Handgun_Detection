@@ -1,3 +1,4 @@
+
 import streamlit as st
 import tempfile
 import cv2
@@ -9,11 +10,6 @@ import imageio
 import warnings
 import time
 import os
-import torch
-from ultralytics.nn.tasks import DetectionModel
-
-# Fix PyTorch 2.6+ weights unpickling issue
-torch.serialization.add_safe_globals([DetectionModel])
 
 warnings.filterwarnings("ignore")
 
@@ -89,14 +85,20 @@ def detect_video(video_file_path):
                 break
 
             try:
+                # Run the model prediction (assumes model is global)
                 results = model.predict(frame, verbose=False)
+
+                # Get the annotated frame (PIL Image)
                 annotated = results[0].plot()
 
+                # Ensure it's a NumPy array (RGB, uint8)
                 if isinstance(annotated, Image.Image):
                     annotated = np.array(annotated)
+
                 if annotated.dtype != np.uint8:
                     annotated = annotated.astype(np.uint8)
 
+                # Append frame to video writer
                 writer.append_data(annotated)
 
             except Exception as e:
@@ -114,6 +116,7 @@ def detect_video(video_file_path):
     except Exception as e:
         st.error(f"❌ Error processing video: {e}")
         return None
+
 
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
@@ -172,6 +175,7 @@ elif option == "🎞️ Video":
                 st.error(f"⚠️ Could not prepare download button: {e}")
         else:
             st.error("❌ Failed to process the video. Please check the file and try again.")
+
 
 elif option == "📹 Webcam":
     webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
