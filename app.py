@@ -1,4 +1,4 @@
-
+import subprocess
 import streamlit as st
 import tempfile
 import cv2
@@ -147,45 +147,59 @@ if option == "📷 Image":
                 st.write(f"🔍 **Objects Detected**: {num_detections}")
                 st.download_button("📥 Download Result Image", data=result_img.tobytes(), file_name=f"detection_{image_file.name}", mime="image/jpeg")
 
+def convert_to_h264(input_path):
+    # Create a temp file for the converted video
+    h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+    h264_temp.close()
+    output_path = h264_temp.name
+
+    # ffmpeg command to convert video to H.264
+    command = [
+        "ffmpeg",
+        "-y",  # Overwrite output file if it exists
+        "-i", input_path,
+        "-vcodec", "libx264",
+        "-acodec", "aac",
+        output_path
+    ]
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return output_path
+    except subprocess.CalledProcessError as e:
+        st.error("Video conversion to H.264 failed.")
+        st.error(e.stderr.decode())
+        return None
+
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
     if video_file:
-        # If a new file is uploaded, clear previous state
-        if st.session_state.get("last_video_name") != video_file.name:
-            st.session_state["last_video_name"] = video_file.name
-            st.session_state.pop("video_output_path", None)
+        # Save uploaded file to a temp file
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+        tfile.write(video_file.read())
+        tfile.close()
 
-        # Save upload to temp file on first upload
-        if "video_output_path" not in st.session_state:
-            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-            tfile.write(video_file.read())
-            tfile.flush()
+        st.info("🧠 Processing video...")
+        processed_path = detect_video(tfile.name)
 
-            st.info("🧠 Processing video... Please wait.")
-            out_path = detect_video(tfile.name)
-            if out_path and os.path.exists(out_path):
-                st.session_state["video_output_path"] = out_path
-            else:
-                st.error("❌ Failed to process the video.")
-                st.stop()
+        # Convert processed video to H.264
+        h264_path = convert_to_h264(processed_path)
+        if h264_path is None or not os.path.exists(h264_path):
+            st.error("❌ Could not convert video to browser-compatible format.")
+        else:
+            st.success("✅ Video processed and converted to H.264!")
 
-        # At this point, we have a processed video file path
-        processed_path = st.session_state["video_output_path"]
-        st.success("✅ Video processed!")
+            # Display the video
+            st.video(h264_path, format="video/mp4", start_time=0)
 
-        # Display the video using a file-like object
-        with open(processed_path, "rb") as video:
-            st.video(video)
-
-        # Download button
-        with open(processed_path, "rb") as f:
-            data = f.read()
-        st.download_button(
-            "📥 Download Processed Video",
-            data=data,
-            file_name=f"processed_{video_file.name}",
-            mime="video/mp4"
-        )
+            # Download button
+            with open(h264_path, "rb") as f:
+                video_bytes = f.read()
+            st.download_button(
+                "📥 Download Processed Video",
+                data=video_bytes,
+                file_name="processed_video.mp4",
+                mime="video/mp4"
+            
 
 
 elif option == "📹 Webcam":
