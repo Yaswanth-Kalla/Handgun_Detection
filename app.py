@@ -198,7 +198,7 @@ elif option == "🎞️ Video":
                 data=video_bytes,
                 file_name="processed_video.mp4",
                 mime="video/mp4"
-            
+            )
 
 
 elif option == "📹 Webcam":
