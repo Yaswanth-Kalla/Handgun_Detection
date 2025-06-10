@@ -65,7 +65,6 @@ def detect_image(image):
 def detect_video(video_file_path):
     try:
         cap = cv2.VideoCapture(video_file_path)
-
         if not cap.isOpened():
             st.error("⚠️ Could not open video file.")
             return None
@@ -73,12 +72,12 @@ def detect_video(video_file_path):
         fps = cap.get(cv2.CAP_PROP_FPS) or 20
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        out_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(temp_output.name, fourcc, fps, (width, height))
-
         progress = st.progress(0)
         frame_num = 0
 
@@ -88,33 +87,33 @@ def detect_video(video_file_path):
                 break
 
             try:
-                results = model.predict(frame, verbose=False)
+                # YOLO expects BGR → results[0].plot() returns PIL RGB
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = model.predict(rgb, verbose=False)
                 annotated = results[0].plot()
 
+                # Convert PIL → NumPy
                 if isinstance(annotated, Image.Image):
                     annotated = np.array(annotated)
-
-                if annotated.dtype != np.uint8:
-                    annotated = annotated.astype(np.uint8)
-
-                bgr_frame = cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
-                out.write(bgr_frame)
-
-            except Exception as e:
-                st.warning(f"⚠️ Skipping frame {frame_num} due to error: {e}")
-                continue
+                # back to BGR for writer
+                bgr = cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
+                out.write(bgr)
+            except Exception:
+                # skip bad frames
+                pass
 
             frame_num += 1
-            if frame_count > 0:
-                progress.progress(min(int(frame_num / frame_count * 100), 100))
+            if frame_count:
+                progress.progress(min(int(frame_num/frame_count*100), 100))
 
         cap.release()
         out.release()
-        return temp_output.name
+        return out_path
 
     except Exception as e:
-        st.error(f"❌ Error processing video: {e}")
+        st.error(f"❌ Video processing failed: {e}")
         return None
+
 
 
 
@@ -151,36 +150,39 @@ if option == "📷 Image":
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
     if video_file:
-        if "video_output" not in st.session_state:
-            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(video_file.name)[1])
+        # 1. Clear prior output if a new file is uploaded
+        if st.session_state.get("last_video_name") != video_file.name:
+            st.session_state["last_video_name"] = video_file.name
+            st.session_state.pop("video_output_path", None)
+
+        # 2. Save upload to temp file
+        if "video_output_path" not in st.session_state:
+            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
             tfile.write(video_file.read())
             tfile.flush()
 
             st.info("🧠 Processing video... Please wait.")
-            processed_path = detect_video(tfile.name)
-
-            if processed_path and os.path.exists(processed_path):
-                st.session_state.video_output = processed_path
+            out_path = detect_video(tfile.name)
+            if out_path and os.path.exists(out_path):
+                st.session_state["video_output_path"] = out_path
             else:
                 st.error("❌ Failed to process the video.")
                 st.stop()
 
-        output_path = st.session_state.video_output
-
+        # 3. Display processed video
+        processed = st.session_state["video_output_path"]
         st.success("✅ Video processed!")
-        st.video(output_path)
+        st.video(processed, format="video/mp4")
 
-        try:
-            with open(output_path, "rb") as f:
-                video_bytes = f.read()
-            st.download_button(
-                "📥 Download Processed Video",
-                data=video_bytes,
-                file_name="processed_video.mp4",
-                mime="video/mp4"
-            )
-        except Exception as e:
-            st.error(f"⚠️ Could not prepare download button: {e}")
+        # 4. Download button uses the already-processed file
+        with open(processed, "rb") as f:
+            data = f.read()
+        st.download_button(
+            "📥 Download Processed Video",
+            data=data,
+            file_name=f"processed_{video_file.name}.mp4",
+            mime="video/mp4"
+        )
 
 
 elif option == "📹 Webcam":
