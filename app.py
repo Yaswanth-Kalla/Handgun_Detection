@@ -127,9 +127,24 @@ class YOLOVideoTransformer(VideoTransformerBase):
         return av.VideoFrame.from_ndarray(annotated_img, format="bgr24")
 
 # Use rtc_configuration for cloud compatibility
-rtc_config = {
-    "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-}
+rtc_config = RTCConfiguration({
+    "iceServers": [
+        { "urls": ["stun:stun.l.google.com:19302"] },
+        {
+            "urls": ["turn:relay.metered.ca:80", "turn:relay.metered.ca:443", "turn:relay.metered.ca:443?transport=tcp"],
+            "username": "openai",
+            "credential": "openai"
+        }
+    ]
+})
+
+webrtc_streamer(
+    key="webcam",
+    video_transformer_factory=YOLOVideoTransformer,
+    rtc_configuration=rtc_config,
+    media_stream_constraints={"video": True, "audio": False},
+    async_processing=True
+)
 
 def convert_to_h264(input_path):
     h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
