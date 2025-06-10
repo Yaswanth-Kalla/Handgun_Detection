@@ -116,20 +116,37 @@ def detect_video(video_file_path):
         return None
 
 
+rtc_configuration = RTCConfiguration(
+    {
+        "iceServers": [
+            {"urls": "stun:global.stun.twilio.com:3478"},
+            {
+                "urls": "turn:global.turn.twilio.com:3478?transport=udp",
+                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
+                "credential": "tE2DajzSJwnsSbc123"
+            },
+            {
+                "urls": "turn:global.turn.twilio.com:3478?transport=tcp",
+                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
+                "credential": "tE2DajzSJwnsSbc123"
+            },
+            {
+                "urls": "turn:global.turn.twilio.com:443?transport=tcp",
+                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
+                "credential": "tE2DajzSJwnsSbc123"
+            }
+        ]
+    }
+)
 
 
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
-        # Convert frame to NumPy BGR format
         img = frame.to_ndarray(format="bgr24")
-
-        # Run YOLO prediction
         results = model.predict(img)
+        annotated = results[0].plot()
+        return av.VideoFrame.from_ndarray(annotated, format="bgr24")
 
-        # Get the annotated image (OpenCV BGR format)
-        annotated_img = results[0].plot()
-
-        return annotated_img
 
 def convert_to_h264(input_path):
     h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
@@ -199,15 +216,14 @@ elif option == "🎞️ Video":
         )
 
 elif option == "📹 Webcam":
-    st.info("Initializing webcam...")
     webrtc_streamer(
-        key="webcam",
+        key="handgun-webcam",
         video_transformer_factory=YOLOVideoTransformer,
-        rtc_configuration={
-            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-        },
+        rtc_configuration=rtc_configuration,
         media_stream_constraints={"video": True, "audio": False},
+        async_processing=True
     )
+
 
 
 st.markdown("---")
