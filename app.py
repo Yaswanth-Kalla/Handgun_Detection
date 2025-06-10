@@ -118,17 +118,10 @@ def detect_video(video_file_path):
 
 
 class YOLOVideoTransformer(VideoTransformerBase):
-    def transform(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        results = model(img)
-        annotated_img = results[0].plot()
-        # Return as av.VideoFrame
-        return av.VideoFrame.from_ndarray(annotated_img, format="bgr24")
-
-# Use rtc_configuration for cloud compatibility
-rtc_config = {
-    "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-}
+def transform(self, frame):
+    img = frame.to_ndarray(format="bgr24")
+    results = model.predict(img)
+    return results[0].plot()
         
 def convert_to_h264(input_path):
     h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
@@ -198,14 +191,7 @@ elif option == "🎞️ Video":
         )
 
 elif option == "📹 Webcam":
-    webrtc_streamer(
-        key="webcam",
-        video_transformer_factory=YOLOVideoTransformer,
-        media_stream_constraints={"video": True, "audio": False},
-        async_processing=True,
-        mode=WebRtcMode.SENDRECV,
-        rtc_configuration=rtc_config
-    )
+webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
 
 st.markdown("---")
 st.markdown("<div style='text-align:center;'>Made with ❤️ using Streamlit</div>", unsafe_allow_html=True)
