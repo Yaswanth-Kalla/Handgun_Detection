@@ -120,37 +120,16 @@ def detect_video(video_file_path):
 
 class YOLOVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
+        # Convert frame to NumPy BGR format
         img = frame.to_ndarray(format="bgr24")
-        results = model(img)
-        annotated_img = results[0].plot()
-        # Return as av.VideoFrame
-        return av.VideoFrame.from_ndarray(annotated_img, format="bgr24")
 
-# Use rtc_configuration for cloud compatibility
-rtc_configuration = RTCConfiguration(
-    {
-        "iceServers": [
-            {
-                "urls": "stun:global.stun.twilio.com:3478"
-            },
-            {
-                "urls": "turn:global.turn.twilio.com:3478?transport=udp",
-                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
-                "credential": "tE2DajzSJwnsSbc123"
-            },
-            {
-                "urls": "turn:global.turn.twilio.com:3478?transport=tcp",
-                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
-                "credential": "tE2DajzSJwnsSbc123"
-            },
-            {
-                "urls": "turn:global.turn.twilio.com:443?transport=tcp",
-                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
-                "credential": "tE2DajzSJwnsSbc123"
-            }
-        ]
-    }
-)
+        # Run YOLO prediction
+        results = model.predict(img)
+
+        # Get the annotated image (OpenCV BGR format)
+        annotated_img = results[0].plot()
+
+        return annotated_img
 
 def convert_to_h264(input_path):
     h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
@@ -220,15 +199,14 @@ elif option == "🎞️ Video":
         )
 
 elif option == "📹 Webcam":
+    st.info("Initializing webcam...")
     webrtc_streamer(
         key="webcam",
         video_transformer_factory=YOLOVideoTransformer,
-        rtc_configuration=rtc_configuration,
-        media_stream_constraints={
-            "video": True,
-            "audio": False
+        rtc_configuration={
+            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
         },
-        async_processing=True
+        media_stream_constraints={"video": True, "audio": False},
     )
 
 
