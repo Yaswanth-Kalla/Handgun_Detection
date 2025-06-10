@@ -6,7 +6,6 @@ import numpy as np
 from PIL import Image
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration, WebRtcMode
-import imageio
 import warnings
 import time
 import os
