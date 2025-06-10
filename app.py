@@ -96,29 +96,21 @@ def detect_video(video_file_path):
             st.write(f"🧠 Processing frame {frame_num + 1}/{frame_count}...")
 
             try:
-                # Convert BGR to RGB
+                # Convert BGR (OpenCV) to RGB (for model)
                 rgb_input = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
+                # Run prediction
                 results = model.predict(rgb_input, verbose=False)
 
-                if results is None or len(results) == 0:
-                    st.warning(f"⚠️ No results for frame {frame_num}. Skipping.")
-                    frame_num += 1
-                    progress.progress(min(int((frame_num / frame_count) * 100), 100))
-                    continue
+                # Plot returns PIL.Image — convert to NumPy
+                annotated_image_pil = results[0].plot()
+                annotated_image_np = np.array(annotated_image_pil)
 
-                # PIL image returned by .plot()
-                annotated_pil = results[0].plot()
-                if annotated_pil is None:
-                    st.warning(f"⚠️ Could not annotate frame {frame_num}. Skipping.")
-                    frame_num += 1
-                    progress.progress(min(int((frame_num / frame_count) * 100), 100))
-                    continue
+                # imageio expects RGB uint8 NumPy array
+                if annotated_image_np.dtype != np.uint8:
+                    annotated_image_np = annotated_image_np.astype(np.uint8)
 
-                # Convert PIL to NumPy
-                annotated_np = np.array(annotated_pil)
-
-                writer.append_data(annotated_np)
+                writer.append_data(annotated_image_np)
 
             except Exception as e:
                 st.error(f"❌ Error processing frame {frame_num}: {e}")
@@ -137,7 +129,6 @@ def detect_video(video_file_path):
     except Exception as e:
         st.error(f"❌ Error processing video: {e}")
         return None
-
 
 
 class YOLOVideoTransformer(VideoTransformerBase):
