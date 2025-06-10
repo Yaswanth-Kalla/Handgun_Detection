@@ -169,10 +169,22 @@ elif option == "🎞️ Video":
                 st.error("❌ Failed to process the video.")
                 st.stop()
 
-        # 3. Display processed video
+                # 3. Display processed video only when fully written
         processed = st.session_state["video_output_path"]
         st.success("✅ Video processed!")
-        st.video(processed, format="video/mp4")
+
+        # Wait briefly to ensure file write completion (especially in cloud)
+        time.sleep(1)
+
+        try:
+            with open(processed, "rb") as f:
+                video_bytes = f.read()
+
+            # Use st.video directly with bytes to ensure compatibility
+            st.video(video_bytes, format="video/mp4")
+        except Exception as e:
+            st.error(f"⚠️ Could not display video: {e}")
+
 
         # 4. Download button uses the already-processed file
         with open(processed, "rb") as f:
