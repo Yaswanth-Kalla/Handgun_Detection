@@ -86,28 +86,28 @@ def detect_video(video_file_path):
                 break
 
             try:
-                # Convert BGR to RGB before model prediction
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = model.predict(rgb_frame, verbose=False)
 
-                # Annotate the result
+                # Use result.imgs[0] or results[0].plot() and check validity
                 annotated = results[0].plot()
 
-                # Ensure it's a valid NumPy RGB array
+                if annotated is None:
+                    raise ValueError("Model returned None for plot()")
+
                 if isinstance(annotated, Image.Image):
                     annotated = np.array(annotated)
 
-                if annotated is None or not isinstance(annotated, np.ndarray):
-                    raise ValueError("Annotated frame is invalid.")
+                if not isinstance(annotated, np.ndarray):
+                    raise ValueError("Annotated frame is not a NumPy array")
 
-                # Make sure it's uint8 for imageio
                 if annotated.dtype != np.uint8:
                     annotated = annotated.astype(np.uint8)
 
                 writer.append_data(annotated)
 
             except Exception as e:
-                st.error(f"❌ Error processing frame {frame_num}: {e}")
+                st.warning(f"⚠️ Skipping frame {frame_num} due to error: {e}")
                 st.code(traceback.format_exc())
                 continue
 
@@ -120,7 +120,7 @@ def detect_video(video_file_path):
         return temp_output.name
 
     except Exception as e:
-        st.error(f"❌ Error processing video.")
+        st.error("❌ Video processing failed.")
         st.code(traceback.format_exc())
         return None
 
