@@ -114,7 +114,10 @@ def detect_video(video_file_path):
         return temp_output.name
 
     except Exception as e:
-        st.error(f"❌ Error processing video: {e}")
+        import traceback
+        st.error("❌ Error processing video:")
+        st.code(traceback.format_exc())
+
         return None
 
 
@@ -150,6 +153,10 @@ if option == "📷 Image":
 
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
+
+    if video_file:
+        st.write("Video uploaded:", video_file.name)  # Add this line
+
     if video_file:
         tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
         tfile.write(video_file.read())
