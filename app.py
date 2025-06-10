@@ -96,13 +96,7 @@ def detect_video(video_file_path):
             st.write(f"🧠 Processing frame {frame_num + 1}/{frame_count}...")
 
             try:
-                # Ensure the frame is a valid numpy array
-                if not isinstance(frame, np.ndarray):
-                    st.warning(f"⚠️ Frame {frame_num} is not a valid numpy array. Skipping.")
-                    frame_num += 1
-                    continue
-
-                # Convert frame from BGR to RGB before prediction
+                # Convert BGR to RGB
                 rgb_input = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
                 results = model.predict(rgb_input, verbose=False)
@@ -113,16 +107,18 @@ def detect_video(video_file_path):
                     progress.progress(min(int((frame_num / frame_count) * 100), 100))
                     continue
 
-                annotated = results[0].plot()
-
-                if annotated is None:
+                # PIL image returned by .plot()
+                annotated_pil = results[0].plot()
+                if annotated_pil is None:
                     st.warning(f"⚠️ Could not annotate frame {frame_num}. Skipping.")
                     frame_num += 1
                     progress.progress(min(int((frame_num / frame_count) * 100), 100))
                     continue
 
-                rgb_frame = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-                writer.append_data(rgb_frame)
+                # Convert PIL to NumPy
+                annotated_np = np.array(annotated_pil)
+
+                writer.append_data(annotated_np)
 
             except Exception as e:
                 st.error(f"❌ Error processing frame {frame_num}: {e}")
