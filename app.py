@@ -64,6 +64,7 @@ def detect_image(image):
 
 def detect_video(video_file_path):
     try:
+        st.write("🔍 Opening video file...")
         cap = cv2.VideoCapture(video_file_path)
 
         if not cap.isOpened():
@@ -72,6 +73,8 @@ def detect_video(video_file_path):
 
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS) or 20
+
+        st.write(f"🎞️ Total Frames: {frame_count}, FPS: {fps}")
 
         if frame_count == 0:
             cap.release()
@@ -86,24 +89,50 @@ def detect_video(video_file_path):
 
         while True:
             ret, frame = cap.read()
-            if not ret:
+            if not ret or frame is None:
+                st.write("✅ Video reading completed or encountered empty frame.")
                 break
 
-            results = model.predict(frame, verbose=False)
-            annotated = results[0].plot()
-            rgb_frame = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-            writer.append_data(rgb_frame)
+            st.write(f"🧠 Processing frame {frame_num + 1}/{frame_count}...")
+
+            try:
+                results = model.predict(frame, verbose=False)
+
+                if results is None or len(results) == 0:
+                    st.warning(f"⚠️ No results for frame {frame_num}. Skipping.")
+                    frame_num += 1
+                    progress.progress(min(int((frame_num / frame_count) * 100), 100))
+                    continue
+
+                annotated = results[0].plot()
+
+                if annotated is None:
+                    st.warning(f"⚠️ Could not annotate frame {frame_num}. Skipping.")
+                    frame_num += 1
+                    progress.progress(min(int((frame_num / frame_count) * 100), 100))
+                    continue
+
+                rgb_frame = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+                writer.append_data(rgb_frame)
+
+            except Exception as e:
+                st.error(f"❌ Error processing frame {frame_num}: {e}")
+                frame_num += 1
+                progress.progress(min(int((frame_num / frame_count) * 100), 100))
+                continue
 
             frame_num += 1
             progress.progress(min(int((frame_num / frame_count) * 100), 100))
 
         cap.release()
         writer.close()
+        st.write("✅ Video processing completed.")
         return temp_output.name
 
     except Exception as e:
         st.error(f"❌ Error processing video: {e}")
         return None
+
 
 
 class YOLOVideoTransformer(VideoTransformerBase):
