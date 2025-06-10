@@ -191,7 +191,7 @@ class YOLOVideoTransformer(VideoTransformerBase):
             )
 
     elif option == "📹 Webcam":
-    webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
+        webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
 
     st.markdown("---")
     st.markdown("<div style='text-align:center;'>Made with ❤️ using Streamlit</div>", unsafe_allow_html=True)
