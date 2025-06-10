@@ -115,51 +115,30 @@ def detect_video(video_file_path):
         st.error(f"❌ Video processing failed: {e}")
         return None
 
-rtc_configuration = RTCConfiguration(
-    {
-        "iceServers": [
-            {"urls": "stun:global.stun.twilio.com:3478"},
-            {
-                "urls": "turn:global.turn.twilio.com:3478?transport=udp",
-                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
-                "credential": "tE2DajzSJwnsSbc123"
-            },
-            {
-                "urls": "turn:global.turn.twilio.com:3478?transport=tcp",
-                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
-                "credential": "tE2DajzSJwnsSbc123"
-            },
-            {
-                "urls": "turn:global.turn.twilio.com:443?transport=tcp",
-                "username": "dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269",
-                "credential": "tE2DajzSJwnsSbc123"
-            }
-        ]
-    }
-)
-
 # Transformer Class
 class YOLOVideoTransformer(VideoTransformerBase):
+    def __init__(self):
+        # Load the model once
+        self.model = YOLO("model/best.pt")
+        self.prev_time = 0
+
     def transform(self, frame):
-        # 1) Grab a BGR numpy array from the incoming frame
-        bgr = frame.to_ndarray(format="bgr24")
+        # Convert frame to BGR image
+        img = frame.to_ndarray(format="bgr24")
 
-        # 2) Convert to RGB for the YOLO model
-        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        # (Optional) FPS monitoring
+        current_time = time.time()
+        fps = 1 / (current_time - self.prev_time) if self.prev_time else 0
+        self.prev_time = current_time
 
-        # 3) Run inference
-        results = model.predict(rgb, verbose=False)
+        # Run YOLO model
+        results = self.model.predict(img, verbose=False)
 
-        # 4) Get the annotated image (PIL.Image or np.ndarray in RGB)
-        annotated = results[0].plot()
+        # Draw bounding boxes on the frame
+        result_frame = results[0].plot()
 
-        # 5) If it’s a PIL.Image, convert to numpy
-        if isinstance(annotated, Image.Image):
-            annotated = np.array(annotated)
-
-        # 6) Return as VideoFrame in **rgb24** format
-        return av.VideoFrame.from_ndarray(annotated, format="rgb24")
-
+        return result_frame
+        
 def convert_to_h264(input_path):
     h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     h264_temp.close()
@@ -229,13 +208,20 @@ elif option == "🎞️ Video":
 
 elif option == "📹 Webcam":
     webrtc_streamer(
-        key="handgun-webcam",
-        mode=WebRtcMode.SENDRECV,
-        rtc_configuration=rtc_configuration,
-        media_stream_constraints={"video": True, "audio": False},
-        video_transformer_factory=YOLOVideoTransformer,
-        async_processing=True,
-    )
+    key="webcam",
+    video_transformer_factory=YOLOVideoTransformer,
+    rtc_configuration={
+        "iceServers": [
+            {"urls": "stun:stun.l.google.com:19302"},
+            {
+                "urls": "turn:openrelay.metered.ca:80",
+                "username": "openrelayproject",
+                "credential": "openrelayproject"
+            },
+        ]
+    },
+    media_stream_constraints={"video": True, "audio": False},
+)
 
 
 
