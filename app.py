@@ -124,27 +124,16 @@ class YOLOVideoTransformer(VideoTransformerBase):
         return results[0].plot()
         
 def convert_to_h264(input_path):
-    # Create a temp file for the converted video
     h264_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     h264_temp.close()
     output_path = h264_temp.name
-
-    # ffmpeg command to convert video to H.264
     command = [
-        "ffmpeg",
-        "-y",  # Overwrite output file if it exists
-        "-i", input_path,
-        "-vcodec", "libx264",
-        "-acodec", "aac",
-        output_path
+        "ffmpeg", "-y", "-i", input_path,
+        "-vcodec", "libx264", "-acodec", "aac", output_path
     ]
-    try:
-        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return output_path
-    except subprocess.CalledProcessError as e:
-        st.error("Video conversion to H.264 failed.")
-        st.error(e.stderr.decode())
-        return None
+    subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return output_path
+
 if option == "📷 Image":
     image_files = st.file_uploader("Upload one or more images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     if image_files:
@@ -172,34 +161,35 @@ if option == "📷 Image":
 elif option == "🎞️ Video":
     video_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
     if video_file:
-        # Save uploaded file to a temp file
-        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        tfile.write(video_file.read())
-        tfile.close()
-
-        st.info("🧠 Processing video...")
-        processed_path = detect_video(tfile.name)
-
-        # Convert processed video to H.264
-        h264_path = convert_to_h264(processed_path)
-        if h264_path is None or not os.path.exists(h264_path):
-            st.error("❌ Could not convert video to browser-compatible format.")
-        else:
-            st.success("✅ Video processed and converted to H.264!")
-
-            # Display the video
-            st.video(h264_path, format="video/mp4", start_time=0)
-
-            # Download button
+        # Only process if a new file is uploaded
+        if st.session_state.get("last_video_name") != video_file.name:
+            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+            tfile.write(video_file.read())
+            tfile.close()
+            st.info("🧠 Processing video...")
+            processed_path = detect_video(tfile.name)
+            h264_path = convert_to_h264(processed_path)
             with open(h264_path, "rb") as f:
                 video_bytes = f.read()
-            st.download_button(
-                "📥 Download Processed Video",
-                data=video_bytes,
-                file_name="processed_video.mp4",
-                mime="video/mp4"
-            )
+            # Store in session state
+            st.session_state["last_video_name"] = video_file.name
+            st.session_state["video_bytes"] = video_bytes
+            st.session_state["h264_path"] = h264_path
+            st.success("✅ Video processed!")
+        else:
+            # Use cached results
+            video_bytes = st.session_state["video_bytes"]
+            h264_path = st.session_state["h264_path"]
+            st.success("✅ Video loaded from cache!")
 
+        # Display the video and download button (no reprocessing)
+        st.video(h264_path, format="video/mp4", start_time=0)
+        st.download_button(
+            "📥 Download Processed Video",
+            data=video_bytes,
+            file_name="processed_video.mp4",
+            mime="video/mp4"
+        )
 
 elif option == "📹 Webcam":
     webrtc_streamer(key="webcam", video_transformer_factory=YOLOVideoTransformer)
