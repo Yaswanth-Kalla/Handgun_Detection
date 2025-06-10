@@ -64,22 +64,14 @@ def detect_image(image):
 
 def detect_video(video_file_path):
     try:
-        st.write("🔍 Opening video file...")
         cap = cv2.VideoCapture(video_file_path)
 
         if not cap.isOpened():
             st.error("⚠️ Could not open video file.")
             return None
 
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS) or 20
-
-        st.write(f"🎞️ Total Frames: {frame_count}, FPS: {fps}")
-
-        if frame_count == 0:
-            cap.release()
-            st.error("⚠️ The uploaded video has 0 frames.")
-            return None
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
         writer = imageio.get_writer(temp_output.name, fps=fps)
@@ -87,43 +79,38 @@ def detect_video(video_file_path):
         progress = st.progress(0)
         frame_num = 0
 
-        while True:
+        while cap.isOpened():
             ret, frame = cap.read()
-            if not ret or frame is None:
-                st.write("✅ Video reading completed or encountered empty frame.")
+            if not ret:
                 break
 
-            st.write(f"🧠 Processing frame {frame_num + 1}/{frame_count}...")
-
             try:
-                # Convert BGR (OpenCV) to RGB (for model)
-                rgb_input = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # Run the model prediction (assumes model is global)
+                results = model.predict(frame, verbose=False)
 
-                # Run prediction
-                results = model.predict(rgb_input, verbose=False)
+                # Get the annotated frame (PIL Image)
+                annotated = results[0].plot()
 
-                # Plot returns PIL.Image — convert to NumPy
-                annotated_image_pil = results[0].plot()
-                annotated_image_np = np.array(annotated_image_pil)
+                # Ensure it's a NumPy array (RGB, uint8)
+                if isinstance(annotated, Image.Image):
+                    annotated = np.array(annotated)
 
-                # imageio expects RGB uint8 NumPy array
-                if annotated_image_np.dtype != np.uint8:
-                    annotated_image_np = annotated_image_np.astype(np.uint8)
+                if annotated.dtype != np.uint8:
+                    annotated = annotated.astype(np.uint8)
 
-                writer.append_data(annotated_image_np)
+                # Append frame to video writer
+                writer.append_data(annotated)
 
             except Exception as e:
                 st.error(f"❌ Error processing frame {frame_num}: {e}")
-                frame_num += 1
-                progress.progress(min(int((frame_num / frame_count) * 100), 100))
                 continue
 
             frame_num += 1
-            progress.progress(min(int((frame_num / frame_count) * 100), 100))
+            if frame_count > 0:
+                progress.progress(min(int(frame_num / frame_count * 100), 100))
 
         cap.release()
         writer.close()
-        st.write("✅ Video processing completed.")
         return temp_output.name
 
     except Exception as e:
