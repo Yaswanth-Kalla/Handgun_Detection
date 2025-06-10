@@ -96,7 +96,16 @@ def detect_video(video_file_path):
             st.write(f"🧠 Processing frame {frame_num + 1}/{frame_count}...")
 
             try:
-                results = model.predict(frame, verbose=False)
+                # Ensure the frame is a valid numpy array
+                if not isinstance(frame, np.ndarray):
+                    st.warning(f"⚠️ Frame {frame_num} is not a valid numpy array. Skipping.")
+                    frame_num += 1
+                    continue
+
+                # Convert frame from BGR to RGB before prediction
+                rgb_input = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                results = model.predict(rgb_input, verbose=False)
 
                 if results is None or len(results) == 0:
                     st.warning(f"⚠️ No results for frame {frame_num}. Skipping.")
