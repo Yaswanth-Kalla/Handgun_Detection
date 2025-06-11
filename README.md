@@ -13,6 +13,12 @@ Upon detection, it highlights the handgun with a bounding box, displays a confid
 
 ---
 
+## Hosted URL
+
+You can visit the website here [Handgun Detection](https://handgundetection-e4njfxpc39bapnuge8kg8j.streamlit.app)
+
+---
+
 ## 🚀 Features
 
 - 📷 **Image Detection**: Upload one or multiple images and detect the presence of handguns with bounding boxes and detection scores.
@@ -38,7 +44,6 @@ Upon detection, it highlights the handgun with a bounding box, displays a confid
 
 ---
 
-
 ## 🏗️ System Architecture
 
 ```plaintext
@@ -63,7 +68,6 @@ Upon detection, it highlights the handgun with a bounding box, displays a confid
 
 ---
 
-
 ## 🧠 How It Works
 
 1. **YOLOv11n model** is loaded once when the app starts.
@@ -73,10 +77,6 @@ Upon detection, it highlights the handgun with a bounding box, displays a confid
 3. Webcam mode:
    - If a gun is detected continuously for 5 seconds (confidence > 0.7), a **siren alarm** is played.
 4. Final results are shown and available for **download** (image/video).
-
----
-
-
 
 ---
 
@@ -112,34 +112,103 @@ Live handgun detection using a webcam. The system immediately detects handguns a
 
 ![Webcam Detection](images/webcam.png)
 
-
 ---
-
-
-
 
 ## 📊 Model Performance
 
 | Metric                      | Value         |
 |----------------------------|---------------|
 | Classification Accuracy    | 0.74          |
-| IOU-based Accuracy          | 0.65          |
+| IOU-based Accuracy         | 0.65          |
 | F1 Score                   | 0.78          |
 | Inference Speed            | ~0.4 ms/frame |
 | FPS (Live Feed)            | 30–40         |
 
 ---
 
+## 🧾 Dataset Overview
 
-## 🧪 Evaluation Highlights
+The handgun detection model was trained on a **custom handgun image dataset** created using [Roboflow](https://roboflow.com), comprising:
 
-- Minimum **30–40% handgun visibility** required
-- Performs best in **well-lit environments**
-- **Lower resolution** reduces accuracy but improves speed
-- Fails in **very low-light** or **high occlusion** cases
+- ✅ **2,600 training images**
+- ✅ **300 validation images**
+- ✅ Format: YOLOv5/YOLOv11-compatible (`.txt` + `YAML`)
+- ✅ Single class: `gun`
+
+### 🔁 Augmentations Applied:
+- Rotation
+- Brightness & Contrast Adjustment
+- Random Masking
+- Spatial Flip and Scaling
+
+ Each image was labeled using Roboflow’s auto-labeling and manually corrected to ensure bounding box accuracy. These variations improve generalization across lighting and occlusion scenarios.
 
 ---
 
+## 🧠 Model Development Details
+
+### 🧰 Model Architecture: YOLOv11n
+
+YOLOv11n was selected for its:
+- ⚡ High inference speed (~0.4ms per frame)
+- 🪶 Lightweight architecture ideal for edge and CPU-only devices
+- 🎯 Competitive accuracy for real-time surveillance use cases
+- 🧠 Attention-enhanced backbone and optimized spatial pyramids
+
+---
+
+### 🏋️‍♂️ Model Training
+
+| Aspect                  | Description                                   |
+|------------------------|-----------------------------------------------|
+| Base model             | Pre-trained YOLOv11n (COCO-trained)           |
+| Transfer learning      | Fine-tuned on handgun dataset (2,600 images)  |
+| Dataset format         | YOLOv5/YOLOv11 compatible (via Roboflow)      |
+| Validation split       | 300 images for validation                     |
+| Training tool          | Ultralytics CLI with YAML configuration       |
+| Training platform      | Jupyter Notebook (PyTorch backend)            |
+| Augmentations          | Rotation, masking, brightness & contrast shift|
+| Custom YAML            | 1 class: `gun`, with dataset path references  |
+
+---
+
+### 🧪 Evaluation Highlights
+
+- ✅ **F1 Score**: 0.78  
+- ✅ **Classification Accuracy**: 0.74  
+- ✅ **IOU-based Accuracy**: 0.65  
+- 🚀 **Live Feed FPS**: 30–40 FPS  
+- ⏱️ **Inference Speed**: ~0.4 ms/frame  
+
+| Condition            | Performance Notes |
+|----------------------|-------------------|
+| 🕶️ Low light         | Reduced confidence |
+| 🔍 Small object size | Reduced accuracy   |
+| 📉 <30% visibility   | Detection fails     |
+| 🔆 Well-lit scenes   | High confidence     |
+| 📺 480p input        | Faster but less precise detection |
+
+---
+
+### ⚠️ Limitations
+
+- Detection may fail in extreme **low-light or blurry scenarios**.
+- **High occlusion or poor visibility (<30%)** impacts performance.
+- Low-resolution inputs can speed up inference but reduce **confidence scores**.
+
+---
+
+### 🧠 Tools & Libraries Used
+
+| Tool / Library      | Purpose                                           |
+|---------------------|---------------------------------------------------|
+| **YOLOv11n (Ultralytics)** | Model architecture & training                |
+| **PyTorch**         | Backend for deep learning model execution         |
+| **Roboflow**        | Dataset annotation, augmentation & export         |
+| **Jupyter Notebook**| Model training, experimentation, and logging      |
+| **OpenCV + PIL**    | Image/video/frame processing and overlay drawing  |
+
+---
 
 ## 🔮 Future Enhancements
 
@@ -151,14 +220,12 @@ Live handgun detection using a webcam. The system immediately detects handguns a
 
 ---
 
-
-
 ## 📦 Setup Instructions
 
 > 🔹 Clone this repo
 
 ```bash
-git clone https://github.com/your-username/handgun-detection-app.git
+git clone https://github.com/Yaswanth-Kalla/Handgun_Detection.git
 cd handgun-detection-app
 ```
 
@@ -167,7 +234,7 @@ cd handgun-detection-app
 ```bash
 python -m venv venv
 source venv/bin/activate  # on Linux/Mac
-venv\Scripts\activate     # on Windows
+venv\Scripts\activate   # on Windows
 ```
 
 > 🔹 Install dependencies:
@@ -203,10 +270,10 @@ streamlit run app.py
 
 ---
 
-
 ## 👨‍💻 Contributors
 
 - [YASWANTH](https://github.com/Yaswanth-Kalla)
 - [JAYA KRISHNA](https://github.com/Krishna-JK-14)
 - [PRANAV](https://github.com/Pranav4005)
 - [VISHESH](https://github.com/VisheshChowdary)
+
